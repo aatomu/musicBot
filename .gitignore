@@ -1,0 +1,4 @@
+#shell script
+*.sh
+#VScode History
+.history
