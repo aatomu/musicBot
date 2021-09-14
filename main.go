@@ -222,7 +222,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			if joinedServer[guildID].loop {
 				addReaction(discord, channelID, messageID, "🔁")
 			} else {
-				addReaction(discord, channelID, messageID, "▶️▶")
+				addReaction(discord, channelID, messageID, "▶️")
 			}
 		} else {
 			addReaction(discord, channelID, messageID, "❌")
@@ -268,13 +268,8 @@ func joinAndPlay(discord *discordgo.Session, guildID string, vcConnection *disco
 		for len(joinedServer[guildID].queue) > 0 {
 			playAudioFile(joinedServer[guildID].conection, joinedServer[guildID].queue[0], guildID)
 
-			//ループ
-			if joinedServer[guildID].loop {
-				continue
-			}
-
 			//スキップなしで次に移動
-			if joinedServer[guildID].skip == 0 {
+			if joinedServer[guildID].skip == 0 && !joinedServer[guildID].loop {
 				joinedServer[guildID].queue = joinedServer[guildID].queue[1:]
 				continue
 			}
