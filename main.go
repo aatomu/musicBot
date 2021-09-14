@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -19,9 +20,10 @@ import (
 
 var (
 	//変数定義
-	prefix       = flag.String("prefix", "", "call prefix")
-	token        = flag.String("token", "", "bot token")
-	joinedServer = map[string]*vcSessionItems{}
+	prefix                  = flag.String("prefix", "", "call prefix")
+	token                   = flag.String("token", "", "bot token")
+	joinedServer            = map[string]*vcSessionItems{}
+	findingUserVoiceChannel sync.Mutex
 )
 
 type vcSessionItems struct {
@@ -171,11 +173,16 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 
+		findingUserVoiceChannel.Lock()
+		defer findingUserVoiceChannel.Unlock()
 		vcSession := joinedServer[userState.GuildID].conection
 		if vcSession == nil {
-			joinAndPlay(discord, guildID, userState)
+			joinUserVoiceChannel(discord, messageID, channelID, guildID, userState)
+			addReaction(discord, channelID, messageID, "🎶")
+			return
 		}
-		addReaction(discord, channelID, messageID, "✅")
+		addReaction(discord, channelID, messageID, "🎵")
+
 		return
 	case isPrefix(message, "q"):
 		text := ""
@@ -257,16 +264,25 @@ func isPrefix(message string, check string) bool {
 	return strings.HasPrefix(message, *prefix+" "+check)
 }
 
-func joinAndPlay(discord *discordgo.Session, guildID string, vcConnection *discordgo.VoiceState) {
+func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelID string, guildID string, vcConnection *discordgo.VoiceState) {
 	vcSession, err := discord.ChannelVoiceJoin(vcConnection.GuildID, vcConnection.ChannelID, false, true)
 	if err != nil {
 		log.Println("Error : Failed join vc")
+		addReaction(discord, channelID, messageID, "❌")
 		return
 	}
 	joinedServer[guildID].conection = vcSession
+
 	go func() {
 		for len(joinedServer[guildID].queue) > 0 {
-			playAudioFile(joinedServer[guildID].conection, joinedServer[guildID].queue[0], guildID)
+			err := playAudioFile(joinedServer[guildID].conection, joinedServer[guildID].queue[0], guildID)
+
+			//エラー回収
+			if err != nil {
+				log.Println("Error : Faild func playAudioFile")
+				log.Println(err)
+				break
+			}
 
 			//スキップなしで次に移動
 			if joinedServer[guildID].skip == 0 && !joinedServer[guildID].loop {
@@ -349,6 +365,7 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, filename string, guildI
 				}
 				return nil
 			}
+
 		}
 	}
 }
