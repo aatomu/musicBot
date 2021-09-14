@@ -69,10 +69,14 @@ Golangで自分のために作成
 ### TTS関連  
 ```<prefix> help``` : ヘルプを表示  
 ```<prefix> add``` : ファイルを再生 *ファイルアップロード時に  
-```<prefix> add
+```
+<prefix> add
 <discord file download link>
-<discord file download link> <コメント>``` : 指定されたURLのファイルを再生  
-```<prefix> skip <数値>` : 数値分スキップ  
+<discord file download link> <コメント>
+```
+ : 指定されたURLのファイルを再生  
+`<prefix> skip <数値>` : 数値分スキップ  
+`<prefix> loop` : ループをトグルで設定  
 `<prefix> q` : キューを表示  
   
 ## コード元:  

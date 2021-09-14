@@ -28,6 +28,7 @@ type vcSessionItems struct {
 	conection *discordgo.VoiceConnection
 	queue     []string
 	skip      int
+	loop      bool
 }
 
 func main() {
@@ -150,6 +151,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 					queue:     []string{data.URL},
 					conection: nil,
 					skip:      0,
+					loop:      false,
 				}
 			}
 		}
@@ -179,6 +181,12 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		text := ""
 		if _, ok := joinedServer[guildID]; ok {
 			text = text + "```"
+			if joinedServer[guildID].loop {
+				text = text + "Loop : True\n"
+			} else {
+				text = text + "Loop : False\n"
+			}
+
 			count := 0
 			for _, url := range joinedServer[guildID].queue {
 				count++
@@ -208,6 +216,18 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		joinedServer[guildID].skip = count
 		addReaction(discord, channelID, messageID, "✅")
 		return
+	case isPrefix(message, "loop"):
+		if _, ok := joinedServer[guildID]; ok {
+			joinedServer[guildID].loop = !joinedServer[guildID].loop
+			if joinedServer[guildID].loop {
+				addReaction(discord, channelID, messageID, "🔁")
+			} else {
+				addReaction(discord, channelID, messageID, "▶️▶")
+			}
+		} else {
+			addReaction(discord, channelID, messageID, "❌")
+		}
+		return
 	case isPrefix(message, "help"):
 		text := "```Music Help```" +
 			"```" + *prefix + " help```" +
@@ -220,6 +240,8 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			"指定されたURLのファイルを再生\n" +
 			"```" + *prefix + " skip <数値>```" +
 			"数値分スキップ\n" +
+			"```" + *prefix + " loop```" +
+			"ループするかをトグルで設定します\n" +
 			"```" + *prefix + " q```" +
 			"キューを表示 (No.1が現在再生中の曲)\n"
 		_, err := discord.ChannelMessageSend(channelID, text)
@@ -245,11 +267,19 @@ func joinAndPlay(discord *discordgo.Session, guildID string, vcConnection *disco
 	go func() {
 		for len(joinedServer[guildID].queue) > 0 {
 			playAudioFile(joinedServer[guildID].conection, joinedServer[guildID].queue[0], guildID)
+
+			//ループ
+			if joinedServer[guildID].loop {
+				continue
+			}
+
+			//スキップなしで次に移動
 			if joinedServer[guildID].skip == 0 {
 				joinedServer[guildID].queue = joinedServer[guildID].queue[1:]
 				continue
 			}
 
+			//スキップ判定
 			if len(joinedServer[guildID].queue) > joinedServer[guildID].skip {
 				joinedServer[guildID].queue = joinedServer[guildID].queue[joinedServer[guildID].skip:]
 				joinedServer[guildID].skip = 0
