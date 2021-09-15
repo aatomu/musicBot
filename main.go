@@ -175,14 +175,16 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 
 		findingUserVoiceChannel.Lock()
 		defer findingUserVoiceChannel.Unlock()
-		vcSession := joinedServer[userState.GuildID].conection
-		if vcSession == nil {
-			joinUserVoiceChannel(discord, messageID, channelID, guildID, userState)
-			addReaction(discord, channelID, messageID, "🎶")
-			return
+		if _, ok := joinedServer[userState.GuildID]; ok {
+			vcSession := joinedServer[userState.GuildID].conection
+			if vcSession == nil {
+				joinUserVoiceChannel(discord, messageID, channelID, guildID, userState)
+				addReaction(discord, channelID, messageID, "🎶")
+				return
+			}
+			addReaction(discord, channelID, messageID, "🎵")
 		}
-		addReaction(discord, channelID, messageID, "🎵")
-
+		addReaction(discord, channelID, messageID, "❌")
 		return
 	case isPrefix(message, "q"):
 		text := ""
