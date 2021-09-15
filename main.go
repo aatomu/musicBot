@@ -183,6 +183,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 				return
 			}
 			addReaction(discord, channelID, messageID, "🎵")
+			return
 		}
 		addReaction(discord, channelID, messageID, "❌")
 		return
