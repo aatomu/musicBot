@@ -281,6 +281,7 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 			if err != nil {
 				log.Println("Error : Faild func playAudioFile")
 				log.Println(err)
+				joinedServer[guildID].queue = []string{}
 				break
 			}
 
