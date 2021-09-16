@@ -280,8 +280,8 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 	go func() {
 		for len(joinedServer[guildID].queue) > 0 {
 			link := joinedServer[guildID].queue[0]
-			if strings.HasPrefix(link, "/") {
-				link = strings.Replace(link, "/", folder, 1)
+			if !strings.HasPrefix(link, "http") {
+				link = folder + link
 			}
 			err := playAudioFile(joinedServer[guildID].conection, link, guildID)
 
