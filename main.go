@@ -24,6 +24,7 @@ var (
 	token                   = flag.String("token", "", "bot token")
 	joinedServer            = map[string]*vcSessionItems{}
 	findingUserVoiceChannel sync.Mutex
+	folder                  = "/home/pi/Public/cloud/"
 )
 
 type vcSessionItems struct {
@@ -278,7 +279,11 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 
 	go func() {
 		for len(joinedServer[guildID].queue) > 0 {
-			err := playAudioFile(joinedServer[guildID].conection, joinedServer[guildID].queue[0], guildID)
+			link := joinedServer[guildID].queue[0]
+			if strings.HasPrefix(link, "/") {
+				link = strings.Replace(link, "/", folder, 1)
+			}
+			err := playAudioFile(joinedServer[guildID].conection, link, guildID)
 
 			//エラー回収
 			if err != nil {
