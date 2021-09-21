@@ -289,7 +289,12 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 			if err != nil {
 				log.Println("Error : Faild func playAudioFile")
 				log.Println(err)
+				fmt.Printf("%+v\n", joinedServer[guildID])
+				err := joinedServer[guildID].conection.Disconnect()
+				log.Println(err)
+				fmt.Printf("%+v\n", joinedServer[guildID])
 				delete(joinedServer, guildID)
+				log.Println(guildID)
 				return
 			}
 
