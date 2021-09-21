@@ -413,7 +413,7 @@ func fileList(dir string) (list string, faild bool) {
 
 	for _, file := range files {
 		if file.IsDir() {
-			data, ok := fileList(dir + file.Name())
+			data, ok := fileList(dir + "/" + file.Name())
 			if !ok {
 				log.Println("Error : Faild func fileList()")
 				return "", false
