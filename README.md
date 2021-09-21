@@ -72,7 +72,7 @@ Golangで自分のために作成
 ```
 <prefix> add
 <discord file download link>
-<discord file download link> <コメント>
+<discord file download link>   <コメント>
 ```
  : 指定されたURLのファイルを再生  
 `<prefix> skip <数値>` : 数値分スキップ  

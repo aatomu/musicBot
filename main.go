@@ -163,7 +163,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		text := strings.Split(message, "\n")
 		text = text[1:]
 		for _, data := range text {
-			replace := regexp.MustCompile(` .*$`)
+			replace := regexp.MustCompile(`   .*$`)
 			url := replace.ReplaceAllString(data, "")
 			if _, ok := joinedServer[userState.GuildID]; ok {
 				joinedServer[userState.GuildID].queue = append(joinedServer[userState.GuildID].queue, url)
@@ -242,17 +242,44 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	case isPrefix(message, "list"):
 		list, ok := fileList(musicDir)
+		list = strings.ReplaceAll(list, "//", "/")
 		list = strings.ReplaceAll(list, musicDir, "")
 		if ok {
-			addReaction(discord, channelID, messageID, "📄")
-			text := "```Music List```\n" + list
-			_, err := discord.ChannelMessageSend(channelID, text)
-			if err != nil {
-				log.Println(err)
-				log.Println("Error : Faild send queue message")
-				addReaction(discord, channelID, messageID, "❌")
+			//一覧
+			listArray := strings.Split(list, "\n")
+			textArray := []string{"``Music List``"}
+			fileType := regexp.MustCompile(`\.mp3$|\.mp4$|\.wav$`)
+			//関係ないやつ削除
+			for _, split := range listArray {
+				if fileType.MatchString(split) {
+					textArray = append(textArray, split)
+				}
 			}
+			//送信
+			text := ""
+			index := 0
+			for {
+				for {
+					text = text + "\n`" + textArray[index] + "`"
+					index++
+					if len(strings.Split(text, "")) > 1000 || len(textArray) == index {
+						break
+					}
+				}
 
+				_, err := discord.ChannelMessageSend(channelID, text)
+				if err != nil {
+					log.Println(err)
+					log.Println("Error : Faild send queue message")
+					addReaction(discord, channelID, messageID, "❌")
+					return
+				}
+				text = ""
+				if len(textArray) == index {
+					break
+				}
+			}
+			addReaction(discord, channelID, messageID, "📄")
 		} else {
 			addReaction(discord, channelID, messageID, "❌")
 		}
@@ -265,7 +292,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			"ファイルを再生 *ファイルアップロード時に\n" +
 			"```" + *prefix + " add\n" +
 			"<discord file download link>\n" +
-			"<discord file download link> <コメント>```" +
+			"<discord file download link>   <コメント>```" +
 			"指定されたURLのファイルを再生\n" +
 			"```" + *prefix + " skip <数値>```" +
 			"数値分スキップ\n" +
