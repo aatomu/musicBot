@@ -241,6 +241,13 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		return
 	case isPrefix(message, "list"):
+		privateChannel, err := discord.UserChannelCreate(authorID)
+		if err != nil {
+			log.Println("Error : Faild generate privateChannel")
+			log.Println(err)
+			addReaction(discord, channelID, messageID, "❌")
+			return
+		}
 		list, ok := fileList(musicDir)
 		list = strings.ReplaceAll(list, "//", "/")
 		list = strings.ReplaceAll(list, musicDir, "")
@@ -267,7 +274,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 				}
 
-				_, err := discord.ChannelMessageSend(channelID, text)
+				_, err := discord.ChannelMessageSend(privateChannel.ID, text)
 				if err != nil {
 					log.Println(err)
 					log.Println("Error : Faild send queue message")
