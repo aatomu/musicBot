@@ -77,6 +77,7 @@ Golangで自分のために作成
  : 指定されたURLのファイルを再生  
 `<prefix> skip <数値>` : 数値分スキップ  
 `<prefix> loop` : ループをトグルで設定  
+`<prefix> list` : 曲一覧を表示  
 `<prefix> q` : キューを表示  
   
 ## コード元:  
