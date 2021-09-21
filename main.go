@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -24,7 +25,7 @@ var (
 	token                   = flag.String("token", "", "bot token")
 	joinedServer            = map[string]*vcSessionItems{}
 	findingUserVoiceChannel sync.Mutex
-	folder                  = "/home/pi/Public/cloud/"
+	musicDir                = "/home/pi/Public/music/"
 )
 
 type vcSessionItems struct {
@@ -239,6 +240,23 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			addReaction(discord, channelID, messageID, "❌")
 		}
 		return
+	case isPrefix(message, "list"):
+		list, ok := fileList(musicDir)
+		list = strings.ReplaceAll(list, musicDir, "")
+		if ok {
+			addReaction(discord, channelID, messageID, "📄")
+			text := "```Music List```\n" + list
+			_, err := discord.ChannelMessageSend(channelID, text)
+			if err != nil {
+				log.Println(err)
+				log.Println("Error : Faild send queue message")
+				addReaction(discord, channelID, messageID, "❌")
+			}
+
+		} else {
+			addReaction(discord, channelID, messageID, "❌")
+		}
+		return
 	case isPrefix(message, "help"):
 		text := "```Music Help```" +
 			"```" + *prefix + " help```" +
@@ -253,6 +271,8 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			"数値分スキップ\n" +
 			"```" + *prefix + " loop```" +
 			"ループするかをトグルで設定します\n" +
+			"```" + *prefix + " list```" +
+			"曲の一覧を表示します\n" +
 			"```" + *prefix + " q```" +
 			"キューを表示 (No.1が現在再生中の曲)\n"
 		_, err := discord.ChannelMessageSend(channelID, text)
@@ -281,7 +301,7 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 		for len(joinedServer[guildID].queue) > 0 {
 			link := joinedServer[guildID].queue[0]
 			if !strings.HasPrefix(link, "http") {
-				link = folder + link
+				link = musicDir + link
 			}
 			err := playAudioFile(joinedServer[guildID].conection, link, guildID)
 
@@ -382,6 +402,28 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, filename string, guildI
 
 		}
 	}
+}
+
+func fileList(dir string) (list string, faild bool) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		log.Println("Error : Faild get files in dir")
+		return "", false
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			data, ok := fileList(dir + file.Name())
+			if !ok {
+				log.Println("Error : Faild func fileList()")
+				return "", false
+			}
+			list = list + data
+			continue
+		}
+		list = list + dir + "/" + file.Name() + "\n"
+	}
+	return list, true
 }
 
 //リアクション追加用
