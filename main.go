@@ -25,6 +25,7 @@ var (
 	token                   = flag.String("token", "", "bot token")
 	joinedServer            = map[string]*vcSessionItems{}
 	findingUserVoiceChannel sync.Mutex
+	changeMap               sync.Mutex
 	musicDir                = "/home/pi/Public/music/"
 )
 
@@ -157,6 +158,8 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		//アップロードされたファイルから
 		for _, data := range m.Attachments {
 			if _, ok := joinedServer[userState.GuildID]; ok {
+				changeMap.Lock()
+				defer changeMap.Unlock()
 				joinedServer[userState.GuildID].queue = append(joinedServer[userState.GuildID].queue, data.URL)
 			} else {
 				joinedServer[userState.GuildID] = &vcSessionItems{
@@ -174,6 +177,8 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			replace := regexp.MustCompile(`   .*$`)
 			url := replace.ReplaceAllString(data, "")
 			if _, ok := joinedServer[userState.GuildID]; ok {
+				changeMap.Lock()
+				defer changeMap.Unlock()
 				joinedServer[userState.GuildID].queue = append(joinedServer[userState.GuildID].queue, url)
 			} else {
 				joinedServer[userState.GuildID] = &vcSessionItems{
@@ -370,15 +375,21 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 
 			//スキップなしで次に移動
 			if joinedServer[guildID].skip == 0 && !joinedServer[guildID].loop {
+				changeMap.Lock()
+				defer changeMap.Unlock()
 				joinedServer[guildID].queue = joinedServer[guildID].queue[1:]
 				continue
 			}
 
 			//スキップ判定
 			if len(joinedServer[guildID].queue) > joinedServer[guildID].skip {
+				changeMap.Lock()
+				defer changeMap.Unlock()
 				joinedServer[guildID].queue = joinedServer[guildID].queue[joinedServer[guildID].skip:]
 				joinedServer[guildID].skip = 0
 			} else {
+				changeMap.Lock()
+				defer changeMap.Unlock()
 				joinedServer[guildID].queue = []string{}
 			}
 		}
