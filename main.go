@@ -215,6 +215,14 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 				text = text + "No." + strconv.Itoa(count) + ": " + url + "\n"
 			}
 			text = text + "```"
+			textSplit := strings.Split(text, "")
+			if len(textSplit) > 1000 {
+				text = ""
+				for i := 1; i < 1000; i++ {
+					text = text + textSplit[i-1]
+				}
+				text = text + "...```"
+			}
 		} else {
 			text = "Don't Seted Queue"
 		}
