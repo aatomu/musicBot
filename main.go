@@ -128,6 +128,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 	message := m.Content
 	messageID := m.ID
 	author := m.Author.Username
+	authorNumber := m.Author.Discriminator
 	authorID := m.Author.ID
 	filesURL := ""
 	if len(m.Attachments) > 0 {
@@ -139,7 +140,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//表示
-	log.Print("Guild:\"" + guildName + "\"  Channel:\"" + channel.Name + "\"  " + filesURL + author + ": " + message)
+	log.Print("Guild:\"" + guildName + "\"  Channel:\"" + channel.Name + "\"  " + filesURL + "<" + author + "#" + authorNumber + ">: " + message)
 
 	//bot 読み上げ無し のチェック
 	if m.Author.Bot {
@@ -537,7 +538,7 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, fileName string, guildI
 			return nil
 		case <-ticker.C:
 			playbackPosition := stream.PlaybackPosition()
-			log.Println("PlayingIn:" + fmt.Sprint(playbackPosition) + " PlayIn: " + guildName)
+			log.Println("PlayingIn: " + fmt.Sprint(playbackPosition) + " PlayIn: " + guildName)
 			if playbackPosition == 0 {
 				log.Println("Error: Faild play music")
 				encodeSession.Cleanup()
