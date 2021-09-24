@@ -357,13 +357,8 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 			if err != nil {
 				log.Println("Error : Faild func playAudioFile")
 				log.Println(err)
-				err := joinedServer[guildID].conection.Speaking(false)
-				if err != nil {
-					log.Println("Error : Faild set speaking:false")
-					log.Println(err)
-				}
 				//待機
-				time.Sleep(5 * time.Second)
+				time.Sleep(10 * time.Second)
 			}
 
 			//スキップなしで次に移動
