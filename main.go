@@ -525,7 +525,7 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, fileName string, guildI
 
 	done := make(chan error)
 	stream := dca.NewStream(encodeSession, vcsession, done)
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	for {
 		select {
@@ -537,7 +537,7 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, fileName string, guildI
 			return nil
 		case <-ticker.C:
 			playbackPosition := stream.PlaybackPosition()
-			log.Println("Sending Now... : Playback:" + fmt.Sprint(playbackPosition) + "PlayIn: " + guildName)
+			log.Println("PlayingIn:" + fmt.Sprint(playbackPosition) + " PlayIn: " + guildName)
 			if playbackPosition == 0 {
 				log.Println("Error: Faild play music")
 				encodeSession.Cleanup()
