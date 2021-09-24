@@ -23,12 +23,12 @@ var (
 	//変数定義
 	prefix                  = flag.String("prefix", "", "call prefix")
 	token                   = flag.String("token", "", "bot token")
-	joinedServer            = map[string]*vcSessionItems{}
+	sessions                = sync.Map{}
 	findingUserVoiceChannel sync.Mutex
 	musicDir                = "/home/pi/Public/music/"
 )
 
-type vcSessionItems struct {
+type sessionItems struct {
 	conection *discordgo.VoiceConnection
 	queue     []string
 	skip      int
@@ -90,7 +90,11 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 func botStateUpdate(discord *discordgo.Session) {
 	//botのステータスアップデート
 	joinServer := len(discord.State.Guilds)
-	joinVC := len(joinedServer)
+	joinVC := 0
+	sessions.Range(func(key interface{}, value interface{}) bool {
+		joinVC++
+		return true
+	})
 	VC := ""
 	if joinVC != 0 {
 		VC = " " + strconv.Itoa(joinVC) + "鯖で再生中"
@@ -150,22 +154,26 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			addReaction(discord, channelID, messageID, "❌")
 			return
 		}
+		if userState.GuildID != m.GuildID {
+			log.Println("Error : User Voicechat didn't match message channel")
+			addReaction(discord, channelID, messageID, "❌")
+			return
+		}
 		if len(m.Attachments) == 0 && len(strings.Split(message, "\n")) == 0 {
 			addReaction(discord, channelID, messageID, "❌")
 			return
 		}
 		//アップロードされたファイルから
 		for _, data := range m.Attachments {
-			if _, ok := joinedServer[userState.GuildID]; ok {
-				joinedServer[userState.GuildID].queue = append(joinedServer[userState.GuildID].queue, data.URL)
-			} else {
-				joinedServer[userState.GuildID] = &vcSessionItems{
-					queue:     []string{data.URL},
-					conection: nil,
-					skip:      0,
-					loop:      false,
-				}
-			}
+			oldMapData, _ := sessions.LoadOrStore(m.GuildID, sessionItems{
+				queue:     []string{},
+				conection: nil,
+				skip:      0,
+				loop:      false,
+			})
+			newMapData := oldMapData.(sessionItems)
+			newMapData.queue = append(newMapData.queue, data.URL)
+			sessions.Store(m.GuildID, newMapData)
 		}
 		//メッセージから
 		text := strings.Split(message, "\n")
@@ -173,21 +181,22 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		for _, data := range text {
 			replace := regexp.MustCompile(`   .*$`)
 			url := replace.ReplaceAllString(data, "")
-			if _, ok := joinedServer[userState.GuildID]; ok {
-				joinedServer[userState.GuildID].queue = append(joinedServer[userState.GuildID].queue, url)
-			} else {
-				joinedServer[userState.GuildID] = &vcSessionItems{
-					queue:     []string{url},
-					conection: nil,
-				}
-			}
+			oldMapData, _ := sessions.LoadOrStore(m.GuildID, &sessionItems{
+				queue:     []string{},
+				conection: nil,
+				skip:      0,
+				loop:      false,
+			})
+			newMapData := oldMapData.(*sessionItems)
+			newMapData.queue = append(newMapData.queue, url)
+			sessions.Store(m.GuildID, newMapData)
 		}
 
 		findingUserVoiceChannel.Lock()
 		defer findingUserVoiceChannel.Unlock()
-		if _, ok := joinedServer[userState.GuildID]; ok {
-			vcSession := joinedServer[userState.GuildID].conection
-			if vcSession == nil {
+		if interfaceMapData, ok := sessions.Load(m.GuildID); ok {
+			mapData := interfaceMapData.(*sessionItems)
+			if mapData.conection == nil {
 				joinUserVoiceChannel(discord, messageID, channelID, guildID, userState)
 				addReaction(discord, channelID, messageID, "🎶")
 				return
@@ -199,16 +208,17 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	case isPrefix(message, "q"):
 		text := ""
-		if _, ok := joinedServer[guildID]; ok {
+		if interfaceMapData, ok := sessions.Load(m.GuildID); ok {
+			mapData := interfaceMapData.(*sessionItems)
 			text = text + "```"
-			if joinedServer[guildID].loop {
+			if mapData.loop {
 				text = text + "Loop : True\n"
 			} else {
 				text = text + "Loop : False\n"
 			}
 
 			count := 0
-			for _, url := range joinedServer[guildID].queue {
+			for _, url := range mapData.queue {
 				count++
 				replace := regexp.MustCompile(`^.*/`)
 				url = replace.ReplaceAllString(url, "")
@@ -228,26 +238,34 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		_, err := discord.ChannelMessageSend(channelID, text)
 		if err != nil {
-			log.Println(err)
 			log.Println("Error : Faild send queue message")
+			log.Println(err)
 			addReaction(discord, channelID, messageID, "❌")
 		}
 	case isPrefix(message, "skip "):
-		replace := regexp.MustCompile(`^.* `)
-		countString := replace.ReplaceAllString(message, "")
-		count, err := strconv.Atoi(countString)
-		if err != nil {
-			log.Println("Error : Faild convert countString")
-			addReaction(discord, channelID, messageID, "🤔")
-			return
+		if interfaceMapData, ok := sessions.Load(m.GuildID); ok {
+			mapData := interfaceMapData.(*sessionItems)
+			replace := regexp.MustCompile(`^.* `)
+			countString := replace.ReplaceAllString(message, "")
+			count, err := strconv.Atoi(countString)
+			if err != nil {
+				log.Println("Error : Faild convert countString")
+				addReaction(discord, channelID, messageID, "🤔")
+				return
+			}
+
+			mapData.skip = count
+			addReaction(discord, channelID, messageID, "✅")
+
+		} else {
+			addReaction(discord, channelID, messageID, "❌")
 		}
-		joinedServer[guildID].skip = count
-		addReaction(discord, channelID, messageID, "✅")
 		return
 	case isPrefix(message, "loop"):
-		if _, ok := joinedServer[guildID]; ok {
-			joinedServer[guildID].loop = !joinedServer[guildID].loop
-			if joinedServer[guildID].loop {
+		if interfaceMapData, ok := sessions.Load(m.GuildID); ok {
+			mapData := interfaceMapData.(*sessionItems)
+			mapData.loop = !mapData.loop
+			if mapData.loop {
 				addReaction(discord, channelID, messageID, "🔁")
 			} else {
 				addReaction(discord, channelID, messageID, "▶️")
@@ -345,15 +363,25 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 		addReaction(discord, channelID, messageID, "❌")
 		return
 	}
-	joinedServer[guildID].conection = vcSession
+	interfaceMapData, _ := sessions.Load(guildID)
+	mapData := interfaceMapData.(*sessionItems)
+	mapData.conection = vcSession
 
 	go func() {
-		for len(joinedServer[guildID].queue) > 0 {
-			link := joinedServer[guildID].queue[0]
+		for {
+			interfaceMapData, _ := sessions.Load(guildID)
+			mapData := interfaceMapData.(*sessionItems)
+			//queueが0のとき停止
+			if len(mapData.queue) == 0 {
+				break
+			}
+
+			//リンクorパスの入手
+			link := mapData.queue[0]
 			if !strings.HasPrefix(link, "http") {
 				link = musicDir + link
 			}
-			err := playAudioFile(joinedServer[guildID].conection, link, guildID)
+			err := playAudioFile(mapData.conection, link, guildID)
 			if err != nil {
 				log.Println("Error : Faild func playAudioFile")
 				log.Println(err)
@@ -362,21 +390,21 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 			}
 
 			//スキップなしで次に移動
-			if joinedServer[guildID].skip == 0 && !joinedServer[guildID].loop {
-				joinedServer[guildID].queue = joinedServer[guildID].queue[1:]
+			if mapData.skip == 0 && !mapData.loop {
+				mapData.queue = mapData.queue[1:]
 				continue
 			}
 
 			//スキップ判定
-			if len(joinedServer[guildID].queue) > joinedServer[guildID].skip {
-				joinedServer[guildID].queue = joinedServer[guildID].queue[joinedServer[guildID].skip:]
-				joinedServer[guildID].skip = 0
+			if len(mapData.queue) > mapData.skip {
+				mapData.queue = mapData.queue[mapData.skip:]
+				mapData.skip = 0
 			} else {
-				joinedServer[guildID].queue = []string{}
+				break
 			}
 		}
-		joinedServer[guildID].conection.Disconnect()
-		delete(joinedServer, guildID)
+		mapData.conection.Disconnect()
+		sessions.Delete(guildID)
 	}()
 }
 
@@ -433,7 +461,9 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, filename string, guildI
 				return nil
 			}
 		default:
-			if joinedServer[guildID].skip >= 1 {
+			interfaceMapData, _ := sessions.Load(guildID)
+			mapData := interfaceMapData.(*sessionItems)
+			if mapData.skip >= 1 {
 				encodeSession.Cleanup()
 				_, err := stream.Finished()
 				if err != nil {
