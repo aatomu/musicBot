@@ -288,7 +288,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			mapData := interfaceMapData.(*sessionItems)
 
 			//数字抜き取り
-			replace := regexp.MustCompile(`^.+? `)
+			replace := regexp.MustCompile(`^.+? .+? `)
 			countString := replace.ReplaceAllString(message, "")
 			count, err := strconv.Atoi(countString)
 			//型変換に失敗したらエラーを吐く
@@ -480,7 +480,7 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 				//コネクション切れなら再生を試みる
 				if fmt.Sprint(err) == "Voice connection closed" {
 					//待機
-					time.Sleep(1 * time.Second)
+					time.Sleep(5 * time.Second)
 					continue
 				}
 				log.Println(err)
