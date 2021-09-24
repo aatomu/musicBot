@@ -261,9 +261,9 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			text = text + "```"
 			//文字数確認用
 			textSplit := strings.Split(text, "")
-			if len(textSplit) > 2000 {
+			if len(textSplit) > 1600 {
 				text = ""
-				for i := 1; i < 2000; i++ {
+				for i := 1; i < 1600; i++ {
 					text = text + textSplit[i-1]
 				}
 				text = text + "...```"
@@ -358,7 +358,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 					index++
 
 					//文字数オーバー回避
-					if len(strings.Split(text, "")) > 2000 || len(textArray) == index {
+					if len(strings.Split(text, "")) > 1600 || len(textArray) == index {
 						break
 					}
 				}
