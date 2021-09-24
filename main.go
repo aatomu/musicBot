@@ -354,16 +354,16 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 				link = musicDir + link
 			}
 			err := playAudioFile(joinedServer[guildID].conection, link, guildID)
-
-			//エラー回収
 			if err != nil {
 				log.Println("Error : Faild func playAudioFile")
-				log.Println("playoudio Error : " + fmt.Sprint(err))
-				fmt.Printf("MapData: %+v\n", joinedServer[guildID].conection)
-				err := joinedServer[guildID].conection.Disconnect()
-				log.Println("disconection error: " + fmt.Sprint(err))
-				delete(joinedServer, guildID)
-				return
+				log.Println(err)
+				err := joinedServer[guildID].conection.Speaking(false)
+				if err != nil {
+					log.Println("Error : Faild set speaking:false")
+					log.Println(err)
+				}
+				//待機
+				time.Sleep(5 * time.Second)
 			}
 
 			//スキップなしで次に移動
