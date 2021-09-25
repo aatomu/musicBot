@@ -484,6 +484,8 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 					continue
 				}
 				log.Println(err)
+				//再生をあきらめる
+				break
 			}
 
 			//スキップなしで次に移動
