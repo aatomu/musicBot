@@ -262,9 +262,9 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			text = text + "```"
 			//文字数確認用
 			textSplit := strings.Split(text, "")
-			if len(textSplit) > 1600 {
+			if len(textSplit) > 4000 {
 				text = ""
-				for i := 1; i < 1600; i++ {
+				for i := 1; i < 4000; i++ {
 					text = text + textSplit[i-1]
 				}
 				text = text + "...```"
@@ -274,10 +274,12 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		//送信
-		_, err := discord.ChannelMessageSend(channelID, text)
-		if err != nil {
-			log.Println("Error: Faild send queue message")
-			log.Println(err)
+		ok := embedSend(discord, channelID, &discordgo.MessageEmbed{
+			Title:       "Queue",
+			Description: text,
+			Color:       0xff1111,
+		})
+		if !ok {
 			addReaction(discord, channelID, messageID, "❌")
 		}
 		return
@@ -359,16 +361,18 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 					index++
 
 					//文字数オーバー回避
-					if len(strings.Split(text, "")) > 1600 || len(textArray) == index {
+					if len(strings.Split(text, "")) > 4000 || len(textArray) == index {
 						break
 					}
 				}
 
 				//送信
-				_, err := discord.ChannelMessageSend(privateChannel.ID, text)
-				if err != nil {
-					log.Println("Error: Faild send queue message")
-					log.Println(err)
+				ok := embedSend(discord, privateChannel.ID, &discordgo.MessageEmbed{
+					Title:       "Music List",
+					Description: text,
+					Color:       0xff1111,
+				})
+				if !ok {
 					addReaction(discord, channelID, messageID, "❌")
 					return
 				}
@@ -558,8 +562,8 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, fileName string, guildI
 				encodeSession.Cleanup()
 				_, err := stream.Finished()
 				if err != nil {
-					log.Println(err)
 					log.Println("Error: Faild stop play music")
+					log.Println(err)
 				}
 				return nil
 			}
@@ -602,6 +606,17 @@ func addReaction(discord *discordgo.Session, channelID string, messageID string,
 	if err != nil {
 		log.Print("Error: addReaction Failed")
 		log.Println(err)
-		return
 	}
+	return
+}
+
+func embedSend(discord *discordgo.Session, channelID string, embed *discordgo.MessageEmbed) (ok bool) {
+	ok = true
+	_, err := discord.ChannelMessageSendEmbed(channelID, embed)
+	if err != nil {
+		log.Println("Faild send embed")
+		log.Println(err)
+		ok = false
+	}
+	return
 }
