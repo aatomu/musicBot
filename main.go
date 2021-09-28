@@ -274,7 +274,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		//送信
-		ok := embedSend(discord, channelID, &discordgo.MessageEmbed{
+		ok := sendEmbed(discord, channelID, &discordgo.MessageEmbed{
 			Title:       "Queue",
 			Description: text,
 			Color:       0xff1111,
@@ -367,7 +367,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 
 				//送信
-				ok := embedSend(discord, privateChannel.ID, &discordgo.MessageEmbed{
+				ok := sendEmbed(discord, privateChannel.ID, &discordgo.MessageEmbed{
 					Title:       "Music List",
 					Description: text,
 					Color:       0xff1111,
@@ -610,7 +610,8 @@ func addReaction(discord *discordgo.Session, channelID string, messageID string,
 	return
 }
 
-func embedSend(discord *discordgo.Session, channelID string, embed *discordgo.MessageEmbed) (ok bool) {
+//Embed送信用
+func sendEmbed(discord *discordgo.Session, channelID string, embed *discordgo.MessageEmbed) (ok bool) {
 	ok = true
 	_, err := discord.ChannelMessageSendEmbed(channelID, embed)
 	if err != nil {
