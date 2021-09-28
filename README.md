@@ -62,6 +62,28 @@ Golangで自分のために作成
 開発環境:rpi4(8gb) golang(go1.16.7 linux/arm64) ffmpeg(testing 7:4.1.6-1~deb10u1+rpt2 arm64)  
 必要用件: go v1.16.7+ ffmpeg
 
+## -必要permission-  
+OAuth2:  
+```
+BOT
+```
+Bot:  
+```
+General
+ Manage Roles
+ View Channels
+Text
+ Send Messages
+ Embed Links
+ Read Message History
+ Use External Emojis
+ Add Reactions
+Voice
+ Connect
+ Speak
+```
+招待リンク `https://discord.com/api/oauth2/authorize?client_id=<Your Bot Client ID>&permissions=271928384&scope=bot`  
+  
 ## -起動-  
 ```go run main.go -prefix=<prefix> -token=<bot token>```
   
