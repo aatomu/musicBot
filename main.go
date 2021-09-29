@@ -392,8 +392,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 
 	case isPrefix(message, "help"):
-		text := "```Music Help```" +
-			"```" + *prefix + " help```" +
+		text := "```" + *prefix + " help```" +
 			"ヘルプを表示\n" +
 			"```" + *prefix + " add```" +
 			"ファイルを再生 *ファイルアップロード時に\n" +
@@ -409,10 +408,13 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			"曲の一覧を表示します\n" +
 			"```" + *prefix + " q```" +
 			"キューを表示 (No.1が現在再生中の曲)\n"
-		_, err := discord.ChannelMessageSend(channelID, text)
-		if err != nil {
-			log.Println("Error  Faild send queue message")
-			log.Println(err)
+
+		ok := sendEmbed(discord, channelID, &discordgo.MessageEmbed{
+			Title:       "BotHelp",
+			Description: text,
+			Color:       0xff1111,
+		})
+		if !ok {
 			addReaction(discord, channelID, messageID, "❌")
 		}
 	}
