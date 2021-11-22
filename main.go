@@ -8,7 +8,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,7 +46,7 @@ func main() {
 	//bot起動準備
 	discord, err := discordgo.New()
 	if err != nil {
-		fmt.Println("Error logging")
+		PrintError("Failed logging", err)
 	}
 
 	//token入手
@@ -60,7 +62,7 @@ func main() {
 	}
 	defer func() {
 		if err := discord.Close(); err != nil {
-			log.Println(err)
+			PrintError("Failed close", err)
 		}
 	}()
 	//起動メッセージ表示
@@ -295,7 +297,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			count, err := strconv.Atoi(countString)
 			//型変換に失敗したらエラーを吐く
 			if err != nil {
-				log.Println("Error: Faild convert countString")
+				PrintError("Failed count string to int", err)
 				addReaction(discord, channelID, messageID, "🤔")
 				return
 			}
@@ -330,8 +332,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		//DMのチャンネルIDを入手 or 生成
 		privateChannel, err := discord.UserChannelCreate(authorID)
 		if err != nil {
-			log.Println("Error: Faild generate privateChannel")
-			log.Println(err)
+			PrintError("Failed attend private channel", err)
 			addReaction(discord, channelID, messageID, "❌")
 			return
 		}
@@ -439,8 +440,7 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 	//VCに接続
 	vcSession, err := discord.ChannelVoiceJoin(vcConnection.GuildID, vcConnection.ChannelID, false, true)
 	if err != nil {
-		log.Println("Error: Failed join vc")
-		log.Println(err)
+		PrintError("Failed join VC", err)
 		addReaction(discord, channelID, messageID, "❌")
 		return
 	}
@@ -455,8 +455,7 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 	guildName := ""
 	//正常に入手できるか
 	if guildData, err := discord.Guild(guildID); err != nil {
-		log.Println("Error: Faild get guildData")
-		log.Println(err)
+		PrintError("Failed get GuildData", err)
 		guildName = "unkwnon"
 	} else {
 		guildName = guildData.Name
@@ -482,14 +481,13 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 			//再生
 			err := playAudioFile(mapData.conection, link, guildID, guildName)
 			if err != nil {
-				log.Println("Error: Faild func playAudioFile")
 				//コネクション切れなら再生を試みる
 				if fmt.Sprint(err) == "Voice connection closed" {
 					//待機
 					time.Sleep(5 * time.Second)
 					continue
 				}
-				log.Println(err)
+				PrintError("Failed func playAudioFile()", err)
 				//再生をあきらめる
 				break
 			}
@@ -528,7 +526,6 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, fileName string, guildI
 	opts.Bitrate = 120
 	encodeSession, err := dca.EncodeFile(fileName, opts)
 	if err != nil {
-		log.Println("Error: Faild encode file")
 		return err
 	}
 
@@ -564,8 +561,7 @@ func playAudioFile(vcsession *discordgo.VoiceConnection, fileName string, guildI
 				encodeSession.Cleanup()
 				_, err := stream.Finished()
 				if err != nil {
-					log.Println("Error: Faild stop play music")
-					log.Println(err)
+					PrintError("Failed stop music", err)
 				}
 				return nil
 			}
@@ -578,7 +574,7 @@ func fileList(dir string) (list string, faild bool) {
 	//ディレクトリ読み取り
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Println("Error: Faild get files in dir")
+		PrintError("Failed read directory data", err)
 		return "", false
 	}
 
@@ -588,7 +584,7 @@ func fileList(dir string) (list string, faild bool) {
 		if file.IsDir() {
 			data, ok := fileList(dir + "/" + file.Name())
 			if !ok {
-				log.Println("Error: Faild func fileList()")
+				PrintError("Failed func fileList()", err)
 				return "", false
 			}
 			//追加
@@ -606,8 +602,7 @@ func fileList(dir string) (list string, faild bool) {
 func addReaction(discord *discordgo.Session, channelID string, messageID string, reaction string) {
 	err := discord.MessageReactionAdd(channelID, messageID, reaction)
 	if err != nil {
-		log.Print("Error: addReaction Failed")
-		log.Println(err)
+		PrintError("Failed reactionAdd", err)
 	}
 	return
 }
@@ -617,9 +612,23 @@ func sendEmbed(discord *discordgo.Session, channelID string, embed *discordgo.Me
 	ok = true
 	_, err := discord.ChannelMessageSendEmbed(channelID, embed)
 	if err != nil {
-		log.Println("Faild send embed")
-		log.Println(err)
+		PrintError("Failed send Embed", err)
 		ok = false
+	}
+	return
+}
+
+//Error表示
+func PrintError(message string, err error) {
+	if err != nil {
+		pc, file, line, ok := runtime.Caller(1)
+		fname := filepath.Base(file)
+		position := ""
+		if ok {
+			position = fmt.Sprintf("%s:%d %s()", fname, line, runtime.FuncForPC(pc).Name())
+		}
+		fmt.Printf("---[Error]---\nMessage:\"%s\" %s\n", message, position)
+		fmt.Printf("%s\n", err.Error())
 	}
 	return
 }
