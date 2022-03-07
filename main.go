@@ -44,13 +44,10 @@ func main() {
 	fmt.Println("token        :", *token)
 
 	//bot起動準備
-	discord, err := discordgo.New()
+	discord, err := discordgo.New("Bot " + *token)
 	if err != nil {
 		PrintError("Failed logging", err)
 	}
-
-	//token入手
-	discord.Token = "Bot " + *token
 
 	//eventトリガー設定
 	discord.AddHandler(onReady)
@@ -81,10 +78,8 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	oneSecTicker := time.NewTicker(1 * time.Second)
 	go func() {
 		for {
-			select {
-			case <-oneSecTicker.C:
-				botStateUpdate(discord)
-			}
+			<-oneSecTicker.C
+			botStateUpdate(discord)
 		}
 	}()
 }
@@ -510,7 +505,6 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 		//終了処理
 		mapData.conection.Disconnect()
 		sessions.Delete(guildID)
-		return
 	}()
 }
 
@@ -604,7 +598,6 @@ func addReaction(discord *discordgo.Session, channelID string, messageID string,
 	if err != nil {
 		PrintError("Failed reactionAdd", err)
 	}
-	return
 }
 
 //Embed送信用
@@ -630,5 +623,4 @@ func PrintError(message string, err error) {
 		fmt.Printf("---[Error]---\nMessage:\"%s\" %s\n", message, position)
 		fmt.Printf("%s\n", err.Error())
 	}
-	return
 }
