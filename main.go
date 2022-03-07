@@ -3,29 +3,25 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/atomu21263/atomicgo"
 	"github.com/bwmarrin/discordgo"
-	"github.com/jonas747/dca"
 )
 
 var (
 	//変数定義
 	prefix                  = flag.String("prefix", "", "call prefix")
 	token                   = flag.String("token", "", "bot token")
-	sessions                = sync.Map{}
+	sessions                = atomicgo.ExMapGet()
 	findingUserVoiceChannel sync.Mutex
 	musicDir                = "/home/pi/Public/music/"
 )
@@ -44,24 +40,15 @@ func main() {
 	fmt.Println("token        :", *token)
 
 	//bot起動準備
-	discord, err := discordgo.New("Bot " + *token)
-	if err != nil {
-		PrintError("Failed logging", err)
-	}
+	discord := atomicgo.DiscordBotSetup(*token)
 
 	//eventトリガー設定
 	discord.AddHandler(onReady)
 	discord.AddHandler(onMessageCreate)
 
 	//起動
-	if err = discord.Open(); err != nil {
-		fmt.Println(err)
-	}
-	defer func() {
-		if err := discord.Close(); err != nil {
-			PrintError("Failed close", err)
-		}
-	}()
+	atomicgo.DiscordBotStart(discord)
+	defer atomicgo.DiscordBotEnd(discord)
 	//起動メッセージ表示
 	fmt.Println("Listening...")
 
@@ -151,18 +138,18 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		//入ってないならreturn
 		if userState.GuildID == "" {
 			log.Println("Error : User didn't join Voicechat")
-			addReaction(discord, channelID, messageID, "❌")
+			atomicgo.AddReaction(discord, channelID, messageID, "❌")
 			return
 		}
 		//メッセージの鯖と違うならreturn
 		if userState.GuildID != guildID {
 			log.Println("Error : User Voicechat didn't match message channel")
-			addReaction(discord, channelID, messageID, "❌")
+			atomicgo.AddReaction(discord, channelID, messageID, "❌")
 			return
 		}
 		//ファイルがない or 曲名指定なしでreturn
 		if len(m.Attachments) == 0 && len(strings.Split(message, "\n")) == 0 {
-			addReaction(discord, channelID, messageID, "❌")
+			atomicgo.AddReaction(discord, channelID, messageID, "❌")
 			return
 		}
 
@@ -214,14 +201,14 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			//ないなら接続
 			if mapData.conection == nil {
 				joinUserVoiceChannel(discord, messageID, channelID, guildID, userState)
-				addReaction(discord, channelID, messageID, "🎶")
+				atomicgo.AddReaction(discord, channelID, messageID, "🎶")
 				return
 			}
 			//あるならそのまま終了
-			addReaction(discord, channelID, messageID, "🎵")
+			atomicgo.AddReaction(discord, channelID, messageID, "🎵")
 			return
 		}
-		addReaction(discord, channelID, messageID, "❌")
+		atomicgo.AddReaction(discord, channelID, messageID, "❌")
 		return
 
 	case isPrefix(message, "q"):
@@ -271,14 +258,11 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		//送信
-		ok := sendEmbed(discord, channelID, &discordgo.MessageEmbed{
+		atomicgo.SendEmbed(discord, channelID, &discordgo.MessageEmbed{
 			Title:       "Queue",
 			Description: text,
 			Color:       0xff1111,
 		})
-		if !ok {
-			addReaction(discord, channelID, messageID, "❌")
-		}
 		return
 
 	case isPrefix(message, "skip "):
@@ -291,18 +275,17 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			countString := replace.ReplaceAllString(message, "")
 			count, err := strconv.Atoi(countString)
 			//型変換に失敗したらエラーを吐く
-			if err != nil {
-				PrintError("Failed count string to int", err)
-				addReaction(discord, channelID, messageID, "🤔")
+			if atomicgo.PrintError("Failed count string to int", err) {
+				atomicgo.AddReaction(discord, channelID, messageID, "🤔")
 				return
 			}
 
 			//スキップを設定
 			mapData.skip = count
-			addReaction(discord, channelID, messageID, "✅")
+			atomicgo.AddReaction(discord, channelID, messageID, "✅")
 			return
 		}
-		addReaction(discord, channelID, messageID, "❌")
+		atomicgo.AddReaction(discord, channelID, messageID, "❌")
 		return
 
 	case isPrefix(message, "loop"):
@@ -314,26 +297,25 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			mapData.loop = !mapData.loop
 			//どっちかを表示
 			if mapData.loop {
-				addReaction(discord, channelID, messageID, "🔁")
+				atomicgo.AddReaction(discord, channelID, messageID, "🔁")
 			} else {
-				addReaction(discord, channelID, messageID, "▶️")
+				atomicgo.AddReaction(discord, channelID, messageID, "▶️")
 			}
 			return
 		}
-		addReaction(discord, channelID, messageID, "❌")
+		atomicgo.AddReaction(discord, channelID, messageID, "❌")
 		return
 
 	case isPrefix(message, "list"):
 		//DMのチャンネルIDを入手 or 生成
 		privateChannel, err := discord.UserChannelCreate(authorID)
-		if err != nil {
-			PrintError("Failed attend private channel", err)
-			addReaction(discord, channelID, messageID, "❌")
+		if atomicgo.PrintError("Failed attend private channel", err) {
+			atomicgo.AddReaction(discord, channelID, messageID, "❌")
 			return
 		}
 
 		//ファイルの一覧を入手
-		list, ok := fileList(musicDir)
+		list, ok := atomicgo.FileList(musicDir)
 		list = strings.ReplaceAll(list, musicDir, "")
 
 		//入手成功したら
@@ -363,15 +345,11 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 
 				//送信
-				ok := sendEmbed(discord, privateChannel.ID, &discordgo.MessageEmbed{
+				atomicgo.SendEmbed(discord, privateChannel.ID, &discordgo.MessageEmbed{
 					Title:       "Music List",
 					Description: text,
 					Color:       0xff1111,
 				})
-				if !ok {
-					addReaction(discord, channelID, messageID, "❌")
-					return
-				}
 
 				//リセット
 				text = ""
@@ -381,10 +359,10 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 					break
 				}
 			}
-			addReaction(discord, channelID, messageID, "📄")
+			atomicgo.AddReaction(discord, channelID, messageID, "📄")
 			return
 		}
-		addReaction(discord, channelID, messageID, "❌")
+		atomicgo.AddReaction(discord, channelID, messageID, "❌")
 		return
 
 	case isPrefix(message, "help"):
@@ -405,14 +383,11 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 			"```" + *prefix + " q```" +
 			"キューを表示 (No.1が現在再生中の曲)\n"
 
-		ok := sendEmbed(discord, channelID, &discordgo.MessageEmbed{
+		atomicgo.SendEmbed(discord, channelID, &discordgo.MessageEmbed{
 			Title:       "BotHelp",
 			Description: text,
 			Color:       0xff1111,
 		})
-		if !ok {
-			addReaction(discord, channelID, messageID, "❌")
-		}
 	}
 }
 
@@ -434,9 +409,8 @@ func findUserVoiceState(discord *discordgo.Session, userid string) *discordgo.Vo
 func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelID string, guildID string, vcConnection *discordgo.VoiceState) {
 	//VCに接続
 	vcSession, err := discord.ChannelVoiceJoin(vcConnection.GuildID, vcConnection.ChannelID, false, true)
-	if err != nil {
-		PrintError("Failed join VC", err)
-		addReaction(discord, channelID, messageID, "❌")
+	if atomicgo.PrintError("Failed join VC", err) {
+		atomicgo.AddReaction(discord, channelID, messageID, "❌")
 		return
 	}
 
@@ -445,16 +419,6 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 	mapData := interfaceMapData.(*sessionItems)
 	//vcSessionを保存
 	mapData.conection = vcSession
-
-	//鯖名を入手
-	guildName := ""
-	//正常に入手できるか
-	if guildData, err := discord.Guild(guildID); err != nil {
-		PrintError("Failed get GuildData", err)
-		guildName = "unkwnon"
-	} else {
-		guildName = guildData.Name
-	}
 
 	//go funcでルーチン化して並列処理
 	go func() {
@@ -474,7 +438,7 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 				link = musicDir + link
 			}
 			//再生
-			err := playAudioFile(mapData.conection, link, guildID, guildName)
+			err := atomicgo.PlayAudioFile(1, 1, mapData.conection, link)
 			if err != nil {
 				//コネクション切れなら再生を試みる
 				if fmt.Sprint(err) == "Voice connection closed" {
@@ -482,7 +446,7 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 					time.Sleep(5 * time.Second)
 					continue
 				}
-				PrintError("Failed func playAudioFile()", err)
+				atomicgo.PrintError("Failed func playAudioFile()", err)
 				//再生をあきらめる
 				break
 			}
@@ -506,121 +470,4 @@ func joinUserVoiceChannel(discord *discordgo.Session, messageID string, channelI
 		mapData.conection.Disconnect()
 		sessions.Delete(guildID)
 	}()
-}
-
-func playAudioFile(vcsession *discordgo.VoiceConnection, fileName string, guildID string, guildName string) error {
-	if err := vcsession.Speaking(true); err != nil {
-		return err
-	}
-	defer vcsession.Speaking(false)
-
-	opts := dca.StdEncodeOptions
-	opts.CompressionLevel = 0
-	opts.RawOutput = true
-	opts.Bitrate = 120
-	encodeSession, err := dca.EncodeFile(fileName, opts)
-	if err != nil {
-		return err
-	}
-
-	done := make(chan error)
-	stream := dca.NewStream(encodeSession, vcsession, done)
-	ticker := time.NewTicker(10 * time.Second)
-
-	for {
-		select {
-		case err := <-done:
-			if err != nil && err != io.EOF {
-				return err
-			}
-			encodeSession.Cleanup()
-			return nil
-		case <-ticker.C:
-			playbackPosition := stream.PlaybackPosition()
-			log.Println("PlayingIn: " + fmt.Sprint(playbackPosition) + " PlayIn: " + guildName)
-			if playbackPosition == 0 {
-				log.Println("Error: Faild play music")
-				encodeSession.Cleanup()
-				_, err := stream.Finished()
-				if err != nil {
-					log.Println("Error: Faild stop play music")
-					log.Println(err)
-				}
-				return nil
-			}
-		default:
-			interfaceMapData, _ := sessions.Load(guildID)
-			mapData := interfaceMapData.(*sessionItems)
-			if mapData.skip >= 1 {
-				encodeSession.Cleanup()
-				_, err := stream.Finished()
-				if err != nil {
-					PrintError("Failed stop music", err)
-				}
-				return nil
-			}
-
-		}
-	}
-}
-
-func fileList(dir string) (list string, faild bool) {
-	//ディレクトリ読み取り
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		PrintError("Failed read directory data", err)
-		return "", false
-	}
-
-	//一覧を保存
-	for _, file := range files {
-		//ディレクトリなら一個下でやる
-		if file.IsDir() {
-			data, ok := fileList(dir + "/" + file.Name())
-			if !ok {
-				PrintError("Failed func fileList()", err)
-				return "", false
-			}
-			//追加
-			list = list + data
-			continue
-		}
-		list = list + dir + "/" + file.Name() + "\n"
-	}
-
-	list = strings.ReplaceAll(list, "//", "/")
-	return list, true
-}
-
-//リアクション追加用
-func addReaction(discord *discordgo.Session, channelID string, messageID string, reaction string) {
-	err := discord.MessageReactionAdd(channelID, messageID, reaction)
-	if err != nil {
-		PrintError("Failed reactionAdd", err)
-	}
-}
-
-//Embed送信用
-func sendEmbed(discord *discordgo.Session, channelID string, embed *discordgo.MessageEmbed) (ok bool) {
-	ok = true
-	_, err := discord.ChannelMessageSendEmbed(channelID, embed)
-	if err != nil {
-		PrintError("Failed send Embed", err)
-		ok = false
-	}
-	return
-}
-
-//Error表示
-func PrintError(message string, err error) {
-	if err != nil {
-		pc, file, line, ok := runtime.Caller(1)
-		fname := filepath.Base(file)
-		position := ""
-		if ok {
-			position = fmt.Sprintf("%s:%d %s()", fname, line, runtime.FuncForPC(pc).Name())
-		}
-		fmt.Printf("---[Error]---\nMessage:\"%s\" %s\n", message, position)
-		fmt.Printf("%s\n", err.Error())
-	}
 }
