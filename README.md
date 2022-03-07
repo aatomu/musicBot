@@ -85,7 +85,6 @@ Voice
 ```go run main.go -prefix=<prefix> -token=<bot token>```
   
 ## -botｺﾏﾝﾄﾞ-  
-### TTS関連  
 ```<prefix> help``` : ヘルプを表示  
 ```<prefix> add``` : ファイルを再生 *ファイルアップロード時に  
 ```
