@@ -2,8 +2,8 @@ github.com/ChimeraCoder/anaconda v2.0.0+incompatible h1:F0eD7CHXieZ+VLboCD5UAqCe
 github.com/ChimeraCoder/anaconda v2.0.0+incompatible/go.mod h1:TCt3MijIq3Qqo9SBtuW/rrM4x7rDfWqYWHj8T7hLcLg=
 github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 h1:r+EmXjfPosKO4wfiMLe1XQictsIlhErTufbWUsjOTZs=
 github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7/go.mod h1:b2EuEMLSG9q3bZ95ql1+8oVqzzrTNSiOQqSXWFBzxeI=
-github.com/atomu21263/atomicgo v0.0.0-20220307084823-643b03dc2ea8 h1:XL7g93/sFMPlDBMVS2k442TSk+rh2O12V3JfS9wArX8=
-github.com/atomu21263/atomicgo v0.0.0-20220307084823-643b03dc2ea8/go.mod h1:DbINTXOq75XDjgrzrVeAgXDWF+HX/7MYqORBukrSSLc=
+github.com/atomu21263/atomicgo v0.0.0-20220307134436-44c84a5e4929 h1:rYKuBwNZH1wRaHzNvdxQ7V9v7N5PV9/x/8VuVSx/t/o=
+github.com/atomu21263/atomicgo v0.0.0-20220307134436-44c84a5e4929/go.mod h1:DbINTXOq75XDjgrzrVeAgXDWF+HX/7MYqORBukrSSLc=
 github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330 h1:ekDALXAVvY/Ub1UtNta3inKQwZ/jMB/zpOtD8rAYh78=
 github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330/go.mod h1:nH+k0SvAt3HeiYyOlJpLLv1HG1p7KWP7qU9QPp2/pCo=
 github.com/bwmarrin/discordgo v0.24.0 h1:Gw4MYxqHdvhO99A3nXnSLy97z5pmIKHZVJ1JY5ZDPqY=
