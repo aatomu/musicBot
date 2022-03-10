@@ -65,38 +65,18 @@ Golangで自分のために作成
 OAuth2:  
 ```
 BOT
+applications.commands
 ```
 Bot:  
 ```
-General
- View Channels
-Text
- Send Messages
- Embed Links
- Read Message History
- Add Reactions
 Voice
  Connect
  Speak
 ```
-招待リンク `https://discord.com/api/oauth2/authorize?client_id=<Your Bot Application ID>&permissions=3230784&scope=bot`  
+招待リンク `https://discord.com/oauth2/authorize?client_id=<YourBotApplicationID>&permissions=3145728&scope=bot%20applications.commands`  
   
 ## -起動-  
-```go run main.go -prefix=<prefix> -token=<bot token>```
-  
-## -botｺﾏﾝﾄﾞ-  
-```<prefix> help``` : ヘルプを表示  
-```<prefix> add``` : ファイルを再生 *ファイルアップロード時に  
-```
-<prefix> add
-<discord file download link>
-<discord file download link>   <コメント>
-```
- : 指定されたURLのファイルを再生  
-`<prefix> skip <数値>` : 数値分スキップ  
-`<prefix> loop` : ループをトグルで設定  
-`<prefix> list` : 曲一覧を表示  
-`<prefix> q` : キューを表示  
+```go run main.go -token=<bot token>```
   
 ## コード元:  
 Bot API Code   : https://github.com/bwmarrin/discordgo  
