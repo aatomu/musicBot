@@ -4,6 +4,10 @@ github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 h1:r+EmXj
 github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7/go.mod h1:b2EuEMLSG9q3bZ95ql1+8oVqzzrTNSiOQqSXWFBzxeI=
 github.com/atomu21263/atomicgo v0.0.0-20220307134436-44c84a5e4929 h1:rYKuBwNZH1wRaHzNvdxQ7V9v7N5PV9/x/8VuVSx/t/o=
 github.com/atomu21263/atomicgo v0.0.0-20220307134436-44c84a5e4929/go.mod h1:DbINTXOq75XDjgrzrVeAgXDWF+HX/7MYqORBukrSSLc=
+github.com/atomu21263/slashlib v0.0.0-20220310090607-735c70bc2c1f h1:2rzr4RjA3GJl+0RxfUV2ArYtAYaL43DLQaoS9/mTw/g=
+github.com/atomu21263/slashlib v0.0.0-20220310090607-735c70bc2c1f/go.mod h1:uyGd9FusNyT6g3+oUCm6lgenpN6vpH/eV/yOgJKXdv4=
+github.com/atomu21263/slashlib v0.0.0-20220310112305-4abae62a69f4 h1:NO/WfB/TFvcvmZ6TxoT9fcgbwGQxqcygEZi/LGHKU60=
+github.com/atomu21263/slashlib v0.0.0-20220310112305-4abae62a69f4/go.mod h1:uyGd9FusNyT6g3+oUCm6lgenpN6vpH/eV/yOgJKXdv4=
 github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330 h1:ekDALXAVvY/Ub1UtNta3inKQwZ/jMB/zpOtD8rAYh78=
 github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330/go.mod h1:nH+k0SvAt3HeiYyOlJpLLv1HG1p7KWP7qU9QPp2/pCo=
 github.com/bwmarrin/discordgo v0.24.0 h1:Gw4MYxqHdvhO99A3nXnSLy97z5pmIKHZVJ1JY5ZDPqY=
