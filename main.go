@@ -135,8 +135,8 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 			joinUserVoiceChannel(discord, res, i.GuildID, userState)
 		} else {
 			mapWrite.Lock()
-			session, _ := mapCheck(i.GuildID, slashlib.InteractionResponse{})
-			session.queue = append(session.queue, songs...)
+			sessions[i.GuildID].queue = append(sessions[i.GuildID].queue, songs...)
+			ReturnResponse(res, "Command Success", "This Song Appned Queue.", false)
 			mapWrite.Unlock()
 		}
 
@@ -250,10 +250,10 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 		embed.Description += fmt.Sprintf("Queue : %d\n", len(mapData.queue))
 
 		// キューの一覧
-		for i := 1; i < len(mapData.queue); i++ {
-			url := atomicgo.StringReplace(mapData.queue[i-1], "", "^.*/")
+		for i := 0; i < len(mapData.queue); i++ {
+			url := atomicgo.StringReplace(mapData.queue[i], "", "^.*/")
 			// 保存
-			embed.Description += fmt.Sprintf("No.%d: %s", i, url)
+			embed.Description += fmt.Sprintf("No.%d: %s\n", i+1, url)
 		}
 		//閉じる
 		embed.Description += "```"
