@@ -56,7 +56,7 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	cmd.
 		AddCommand("add", "曲を追加").
 		//AddOption(slashlib.TypeFile, "file", "ファイルで音楽を追加", false, 0, 0).
-		AddOption(slashlib.TypeString, "path", "パスで音楽を追加", false, 0, 0).
+		AddOption(slashlib.TypeString, "path", "パスで音楽を追加", true, 0, 0).
 		AddCommand("skip", "曲をスキップ").
 		AddOption(slashlib.TypeInt, "amount", "数値分 スキップ", true, 0, 0).
 		AddCommand("loop", "現在再生中の曲をループする").
@@ -77,7 +77,7 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 			if JoinedVC > 1 {
 				JoinVC = fmt.Sprintf("%d鯖で再生中", JoinedVC)
 			}
-			atomicgo.BotStateUpdate(discord, fmt.Sprintf("/help | %d鯖で稼働中 %s", JoinedServers, JoinVC), 0)
+			atomicgo.BotStateUpdate(discord, fmt.Sprintf("/add | %d鯖で稼働中 %s", JoinedServers, JoinVC), 0)
 		}
 	}()
 }
@@ -305,13 +305,28 @@ func ReturnResponse(res slashlib.InteractionResponse, title, description string,
 }
 
 func joinUserVoiceChannel(discord *discordgo.Session, res slashlib.InteractionResponse, guildID string, vcConnection *discordgo.VoiceState) {
+	ReturnResponse(res, "Command Running..", "Voice Chat Connecting...", false)
 	//VCに接続
 	vcSession, err := discord.ChannelVoiceJoin(vcConnection.GuildID, vcConnection.ChannelID, false, true)
 	if atomicgo.PrintError("Failed join VC", err) {
-		ReturnResponse(res, "Failed", "ボイスチャットへの接続に失敗しました.", false)
+		res.Edit(&discordgo.WebhookEdit{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title:       "Failed",
+					Description: "ボイスチャットへの接続に失敗しました.",
+				},
+			},
+		})
 		return
 	}
-	ReturnResponse(res, "Command Success", "曲の再生をします", true)
+	res.Edit(&discordgo.WebhookEdit{
+		Embeds: []*discordgo.MessageEmbed{
+			{
+				Title:       "Command Success",
+				Description: "曲の再生をします",
+			},
+		},
+	})
 
 	//go funcでルーチン化して並列処理
 	go func() {
