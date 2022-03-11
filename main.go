@@ -36,7 +36,6 @@ func main() {
 
 	//eventトリガー設定
 	discord.AddHandler(onReady)
-	discord.AddHandler(onMessageCreate)
 	discord.AddHandler(onInteractionCreate)
 
 	//起動
@@ -82,11 +81,6 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	}()
 }
 
-//メッセージが送られたときにCall
-func onMessageCreate(discord *discordgo.Session, mCreate *discordgo.MessageCreate) {
-	atomicgo.MessageViewAndEdit(discord, mCreate)
-}
-
 // slashCommand受信
 func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.InteractionCreate) {
 	i := slashlib.InteractionViewAndEdit(discord, iCreate)
@@ -123,7 +117,6 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 		}
 		songs := []string{}
 		for _, s := range iCreate.Interaction.ApplicationCommandData().Options {
-			fmt.Printf("%#v\n", s)
 			switch s.Name {
 			case "file":
 				fmt.Println("Un Support Option")

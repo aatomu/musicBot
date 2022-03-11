@@ -3,7 +3,7 @@ module github.com/atomu21263/music_bot
 go 1.17
 
 require (
-	github.com/atomu21263/atomicgo v0.0.0-20220307134436-44c84a5e4929
+	github.com/atomu21263/atomicgo v0.0.0-20220311105029-4a52f153c639
 	github.com/atomu21263/slashlib v0.0.0-20220310112305-4abae62a69f4
 	github.com/bwmarrin/discordgo v0.24.0
 )
