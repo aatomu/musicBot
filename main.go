@@ -15,7 +15,7 @@ import (
 var (
 	//変数定義
 	token    = flag.String("token", "", "bot token")
-	sessions = map[string]sessionItems{}
+	sessions = map[string]*sessionItems{}
 	mapWrite sync.Mutex
 	musicDir = "/home/pi/Public/music/"
 )
@@ -126,7 +126,7 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 		}
 		if _, ok := sessions[i.GuildID]; !ok {
 			mapWrite.Lock()
-			sessions[i.GuildID] = sessionItems{
+			sessions[i.GuildID] = &sessionItems{
 				queue: songs,
 				skip:  0,
 				loop:  false,
@@ -134,8 +134,10 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 			mapWrite.Unlock()
 			joinUserVoiceChannel(discord, res, i.GuildID, userState)
 		} else {
+			mapWrite.Lock()
 			session, _ := mapCheck(i.GuildID, slashlib.InteractionResponse{})
 			session.queue = append(session.queue, songs...)
+			mapWrite.Unlock()
 		}
 
 		return
@@ -273,11 +275,11 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 }
 
 // mapチェック
-func mapCheck(key string, res slashlib.InteractionResponse) (session sessionItems, ok bool) {
+func mapCheck(key string, res slashlib.InteractionResponse) (session *sessionItems, ok bool) {
 	mapData, ok := sessions[key]
 	if !ok {
 		ReturnResponse(res, "Failed", "データを見つけることができませんでした...", false)
-		return sessionItems{}, false
+		return &sessionItems{}, false
 	}
 	return mapData, true
 }
@@ -338,7 +340,6 @@ func joinUserVoiceChannel(discord *discordgo.Session, res slashlib.InteractionRe
 				link = musicDir + link
 			}
 			//再生
-			fmt.Println(link)
 			err := atomicgo.PlayAudioFile(1, 1, vcSession, link)
 			if err != nil {
 				//再生をあきらめる
@@ -347,7 +348,9 @@ func joinUserVoiceChannel(discord *discordgo.Session, res slashlib.InteractionRe
 
 			//スキップなしで次に移動
 			if session.skip == 0 && !session.loop {
+				mapWrite.Lock()
 				session.queue = session.queue[1:]
+				mapWrite.Unlock()
 				continue
 			}
 
@@ -363,6 +366,8 @@ func joinUserVoiceChannel(discord *discordgo.Session, res slashlib.InteractionRe
 
 		//終了処理
 		vcSession.Disconnect()
+		mapWrite.Lock()
 		delete(sessions, guildID)
+		mapWrite.Unlock()
 	}()
 }
