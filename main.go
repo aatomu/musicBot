@@ -54,8 +54,8 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	cmd := slashlib.Command{}
 	cmd.
 		AddCommand("add", "曲を追加").
-		//AddOption(slashlib.TypeFile, "file", "ファイルで音楽を追加", false, 0, 0).
-		AddOption(slashlib.TypeString, "path", "パスで音楽を追加", true, 0, 0).
+		AddOption(slashlib.TypeFile, "file", "ファイルで音楽を追加", false, 0, 0).
+		AddOption(slashlib.TypeString, "path", "パスで音楽を追加", false, 0, 0).
 		AddCommand("skip", "曲をスキップ").
 		AddOption(slashlib.TypeInt, "amount", "数値分 スキップ", true, 0, 0).
 		AddCommand("loop", "現在再生中の曲をループする").
@@ -116,10 +116,10 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 			return
 		}
 		songs := []string{}
-		for _, s := range iCreate.Interaction.ApplicationCommandData().Options {
-			switch s.Name {
+		for key, s := range i.CommandOptions {
+			switch key {
 			case "file":
-				fmt.Println("Un Support Option")
+				songs = append(songs, s.AttachmentValue(i).URL)
 			case "path":
 				songs = append(songs, s.StringValue())
 			}
@@ -181,17 +181,17 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 		}
 		//ファイルの一覧を入手
 		list, ok := atomicgo.FileList(musicDir)
-		list = strings.ReplaceAll(list, musicDir, "")
-
+		for i := 0; i < len(list); i++ {
+			list[i] = strings.ReplaceAll(list[i], musicDir, "")
+		}
 		// Embedの配列
 		embeds := []*discordgo.MessageEmbed{}
 		//入手成功したら
 		if ok {
 			//一覧
-			listArray := strings.Split(list, "\n")
 			textArray := []string{"``Music List``"}
 			// 必要なのを保存
-			for _, line := range listArray {
+			for _, line := range list {
 				if atomicgo.StringCheck(line, `\.mp3$|\.mp4$|\.wav$`) {
 					textArray = append(textArray, line)
 				}
@@ -264,7 +264,7 @@ func onInteractionCreate(discord *discordgo.Session, iCreate *discordgo.Interact
 			embed.Description += "...```"
 		}
 		//送信
-		res.Return(slashlib.ReplyMessage, &discordgo.InteractionResponseData{
+		res.Reply(&discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{
 				embed,
 			},
@@ -296,7 +296,7 @@ func ReturnResponse(res slashlib.InteractionResponse, title, description string,
 	if !visible {
 		responseData.Flags = slashlib.Invisible
 	}
-	res.Return(slashlib.ReplyMessage, responseData)
+	res.Reply(responseData)
 }
 
 func joinUserVoiceChannel(discord *discordgo.Session, res slashlib.InteractionResponse, guildID string, vcConnection *discordgo.VoiceState) {
