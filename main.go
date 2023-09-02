@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/atomu21263/atomicgo"
-	"github.com/atomu21263/slashlib"
+	"github.com/aatomu/atomicgo"
+	"github.com/aatomu/slashlib"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -46,7 +46,7 @@ func main() {
 	atomicgo.StopWait()
 }
 
-//BOTの準備が終わったときにCall
+// BOTの準備が終わったときにCall
 func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	//起動メッセージ表示
 	fmt.Println("Listening...")
